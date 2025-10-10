@@ -12,10 +12,10 @@ const { buscarDatos } = require('../services/searchService');
 // Search endpoint
 router.post('/buscar', requireAuth, async (req, res) => {
     try {
-        const { valor, campo } = req.body;
+        const { valor, campo, comuna } = req.body;
 
         // Search using service
-        const results = await buscarDatos(valor, campo, req.userId);
+        const results = await buscarDatos(valor, campo, req.userId, comuna);
 
         res.json(results);
 

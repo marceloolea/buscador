@@ -164,6 +164,21 @@ function dashboardTemplate(usuario = 'Usuario') {
                                 <option value="serie_medidor">⚡ Serie Medidor</option>
                             </select>
                         </div>
+
+                        <!-- Selector de comuna (solo visible para consecutive) -->
+                        <div id="comunaSelector" style="display: none; margin-bottom: 15px;">
+                            <label for="searchComuna" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                                🏘️ Selecciona la comuna:
+                            </label>
+                            <select id="searchComuna" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">
+                                <option value="">-- Todas las comunas --</option>
+                                <option value="Algarrobo">Algarrobo</option>
+                                <option value="CASABLANCA">CASABLANCA</option>
+                                <option value="Cartagena">Cartagena</option>
+                                <option value="El Quisco">El Quisco</option>
+                                <option value="El Tabo">El Tabo</option>
+                            </select>
+                        </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button type="submit" style="flex: 1; min-width: 120px; padding: 12px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
                                 🔍 Buscar
@@ -195,11 +210,34 @@ function dashboardTemplate(usuario = 'Usuario') {
  */
 function getDashboardScript() {
     return `
+                // Mostrar/ocultar selector de comuna según el campo seleccionado
+                document.getElementById('searchField').addEventListener('change', function() {
+                    const campo = this.value;
+                    const comunaSelector = document.getElementById('comunaSelector');
+
+                    if (campo === 'consecutive') {
+                        comunaSelector.style.display = 'block';
+                        document.getElementById('searchValue').placeholder = 'Ingresa el consecutivo a buscar...';
+                    } else {
+                        comunaSelector.style.display = 'none';
+                        document.getElementById('searchComuna').value = ''; // Reset comuna selection
+
+                        // Actualizar placeholder según el campo
+                        const placeholders = {
+                            'direccion': 'Ingresa la dirección a buscar...',
+                            'nis': 'Ingresa el NIS a buscar...',
+                            'serie_medidor': 'Ingresa la serie del medidor a buscar...'
+                        };
+                        document.getElementById('searchValue').placeholder = placeholders[campo] || 'Ingresa el valor a buscar...';
+                    }
+                });
+
                 document.getElementById('searchForm').addEventListener('submit', async function(e) {
                     e.preventDefault();
 
                     const valor = document.getElementById('searchValue').value.trim();
                     const campo = document.getElementById('searchField').value;
+                    const comuna = document.getElementById('searchComuna').value;
 
                     if (!valor) {
                         alert('Por favor ingresa un valor para buscar');
@@ -210,12 +248,19 @@ function getDashboardScript() {
                     resultsDiv.innerHTML = '<p>🔍 Buscando...</p>';
 
                     try {
+                        const requestBody = { valor, campo };
+
+                        // Incluir comuna si se está buscando por consecutivo
+                        if (campo === 'consecutive' && comuna) {
+                            requestBody.comuna = comuna;
+                        }
+
                         const response = await fetch('/api/buscar', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ valor, campo })
+                            body: JSON.stringify(requestBody)
                         });
 
                         const data = await response.json();
