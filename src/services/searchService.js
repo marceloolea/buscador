@@ -34,19 +34,28 @@ async function buscarDatos(valor, campo, userId = null) {
 
     let data, error;
 
-    // For numeric fields, use custom function
-    if (campo === 'nis' || campo === 'consecutive') {
+    // Handle different search types based on field
+    if (campo === 'nis') {
+        // NIS: Exact match (unique identifier)
+        const result = await query.eq('nis', parseInt(valor)).limit(1);
+        data = result.data;
+        error = result.error;
+        console.log(`🔍 Búsqueda exacta de NIS: ${valor}`);
+    } else if (campo === 'consecutive') {
+        // Consecutive: Partial match using custom function
         const result = await supabase.rpc('buscar_numerico', {
             campo_nombre: campo,
             valor_buscar: valor
         });
         data = result.data;
         error = result.error;
+        console.log(`🔍 Búsqueda parcial de consecutivo: ${valor}`);
     } else {
-        // For text fields, use normal API
+        // Text fields: Partial match
         const result = await query.ilike(campo, `%${valor}%`).limit(config.search.maxResults);
         data = result.data;
         error = result.error;
+        console.log(`🔍 Búsqueda parcial de ${campo}: ${valor}`);
     }
 
     if (error) {
