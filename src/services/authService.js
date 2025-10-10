@@ -121,20 +121,21 @@ async function resetearIntentos(usuario) {
  * @returns {object|null} User data if valid, null otherwise
  */
 async function validateCredentials(usuario, password) {
-    // Get user from database
-    const { data: userData } = await supabase
-        .from('usuarios')
-        .select('id, usuario, password_hash, activo')
-        .eq('usuario', usuario)
-        .single();
+    // For now, use only test users (no database lookup needed)
+    const testUser = config.testUsers.find(testUser =>
+        testUser.username === usuario && testUser.password === password
+    );
 
-    // Check credentials (using test users for now)
-    const credencialesValidas = userData && userData.activo && 
-        config.testUsers.some(testUser => 
-            testUser.username === usuario && testUser.password === password
-        );
+    if (testUser) {
+        // Return a mock user object
+        return {
+            id: testUser.username === 'admin' ? 1 : testUser.username === 'marcelo' ? 2 : 3,
+            usuario: testUser.username,
+            activo: true
+        };
+    }
 
-    return credencialesValidas ? userData : null;
+    return null;
 }
 
 /**
