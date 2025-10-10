@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 const { supabase } = require('../config/database');
 const config = require('../config/app');
 
+// In-memory storage for login attempts (resets on server restart)
+const loginAttempts = new Map();
+
 /**
  * Authentication service module
  * Handles JWT operations and login attempt management
@@ -35,29 +38,24 @@ function verifyToken(token) {
  * @returns {object} Object with blocked status and attempt count
  */
 async function verificarIntentos(usuario) {
-    const { data, error } = await supabase
-        .from('intentos_login')
-        .select('intentos_fallidos, bloqueado_hasta')
-        .eq('usuario', usuario)
-        .single();
+    const userAttempts = loginAttempts.get(usuario);
 
-    if (error) return { bloqueado: false, intentos: 0 };
-
-    // Check if user is blocked
-    if (data.bloqueado_hasta && new Date(data.bloqueado_hasta) > new Date()) {
-        return { bloqueado: true, intentos: data.intentos_fallidos };
-    }
-
-    // If lockout time has passed, reset attempts
-    if (data.bloqueado_hasta && new Date(data.bloqueado_hasta) <= new Date()) {
-        await supabase
-            .from('intentos_login')
-            .update({ intentos_fallidos: 0, bloqueado_hasta: null })
-            .eq('usuario', usuario);
+    if (!userAttempts) {
         return { bloqueado: false, intentos: 0 };
     }
 
-    return { bloqueado: false, intentos: data.intentos_fallidos };
+    // Check if user is blocked
+    if (userAttempts.bloqueadoHasta && new Date(userAttempts.bloqueadoHasta) > new Date()) {
+        return { bloqueado: true, intentos: userAttempts.intentos };
+    }
+
+    // If lockout time has passed, reset attempts
+    if (userAttempts.bloqueadoHasta && new Date(userAttempts.bloqueadoHasta) <= new Date()) {
+        loginAttempts.delete(usuario);
+        return { bloqueado: false, intentos: 0 };
+    }
+
+    return { bloqueado: false, intentos: userAttempts.intentos };
 }
 
 /**
@@ -66,13 +64,9 @@ async function verificarIntentos(usuario) {
  * @returns {number} New attempt count
  */
 async function incrementarIntentos(usuario) {
-    const { data } = await supabase
-        .from('intentos_login')
-        .select('intentos_fallidos')
-        .eq('usuario', usuario)
-        .single();
+    const userAttempts = loginAttempts.get(usuario) || { intentos: 0, bloqueadoHasta: null };
 
-    const nuevosIntentos = (data?.intentos_fallidos || 0) + 1;
+    const nuevosIntentos = userAttempts.intentos + 1;
     let bloqueadoHasta = null;
 
     // If reaches max attempts, block for configured duration
@@ -80,25 +74,13 @@ async function incrementarIntentos(usuario) {
         bloqueadoHasta = new Date(Date.now() + config.loginAttempts.lockoutDuration);
     }
 
-    // Update existing record or create new one
-    if (data) {
-        await supabase
-            .from('intentos_login')
-            .update({
-                intentos_fallidos: nuevosIntentos,
-                bloqueado_hasta: bloqueadoHasta,
-                updated_at: new Date()
-            })
-            .eq('usuario', usuario);
-    } else {
-        await supabase
-            .from('intentos_login')
-            .insert({
-                usuario: usuario,
-                intentos_fallidos: nuevosIntentos,
-                bloqueado_hasta: bloqueadoHasta
-            });
-    }
+    // Update in-memory storage
+    loginAttempts.set(usuario, {
+        intentos: nuevosIntentos,
+        bloqueadoHasta: bloqueadoHasta
+    });
+
+    console.log(`🔒 Usuario "${usuario}": ${nuevosIntentos} intentos fallidos`);
 
     return nuevosIntentos;
 }
@@ -108,10 +90,8 @@ async function incrementarIntentos(usuario) {
  * @param {string} usuario - Username
  */
 async function resetearIntentos(usuario) {
-    await supabase
-        .from('intentos_login')
-        .update({ intentos_fallidos: 0, bloqueado_hasta: null, updated_at: new Date() })
-        .eq('usuario', usuario);
+    loginAttempts.delete(usuario);
+    console.log(`✅ Intentos reseteados para usuario: ${usuario}`);
 }
 
 /**
