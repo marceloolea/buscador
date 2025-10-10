@@ -2,8 +2,8 @@ const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
 // Configuración de Supabase
-const supabaseUrl = 'https://db.padhgabayahfjvuslyma.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxbWRlYnp5ZHRnamFmbWRpaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxODM0OTIsImV4cCI6MjA2Mzc1OTQ5Mn0.c8FhzX4gQVEiq5w2Yv-JhpHmOH4_cdtKwsvotzdU198';
+const supabaseUrl = 'https://padhgabayahfjvuslyma.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZGhnYWJheWFoZmp2dXNseW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwMzk1MjksImV4cCI6MjA3NTYxNTUyOX0.KNs9fdwVSHDu_TSW1bcvgE4FWuAf90M8xddkQULhSn8';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
