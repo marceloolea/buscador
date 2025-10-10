@@ -2,8 +2,11 @@ const jwt = require('jsonwebtoken');
 const { supabase } = require('../config/database');
 const config = require('../config/app');
 
-// In-memory storage for login attempts (resets on server restart)
-const loginAttempts = new Map();
+// Global login attempts counter (resets on server restart)
+let globalLoginAttempts = {
+    intentos: 0,
+    bloqueadoHasta: null
+};
 
 /**
  * Authentication service module
@@ -38,24 +41,19 @@ function verifyToken(token) {
  * @returns {object} Object with blocked status and attempt count
  */
 async function verificarIntentos(usuario) {
-    const userAttempts = loginAttempts.get(usuario);
-
-    if (!userAttempts) {
-        return { bloqueado: false, intentos: 0 };
-    }
-
-    // Check if user is blocked
-    if (userAttempts.bloqueadoHasta && new Date(userAttempts.bloqueadoHasta) > new Date()) {
-        return { bloqueado: true, intentos: userAttempts.intentos };
+    // Check if globally blocked
+    if (globalLoginAttempts.bloqueadoHasta && new Date(globalLoginAttempts.bloqueadoHasta) > new Date()) {
+        return { bloqueado: true, intentos: globalLoginAttempts.intentos };
     }
 
     // If lockout time has passed, reset attempts
-    if (userAttempts.bloqueadoHasta && new Date(userAttempts.bloqueadoHasta) <= new Date()) {
-        loginAttempts.delete(usuario);
+    if (globalLoginAttempts.bloqueadoHasta && new Date(globalLoginAttempts.bloqueadoHasta) <= new Date()) {
+        globalLoginAttempts = { intentos: 0, bloqueadoHasta: null };
+        console.log('🔓 Bloqueo global expirado - intentos reseteados');
         return { bloqueado: false, intentos: 0 };
     }
 
-    return { bloqueado: false, intentos: userAttempts.intentos };
+    return { bloqueado: false, intentos: globalLoginAttempts.intentos };
 }
 
 /**
@@ -64,23 +62,22 @@ async function verificarIntentos(usuario) {
  * @returns {number} New attempt count
  */
 async function incrementarIntentos(usuario) {
-    const userAttempts = loginAttempts.get(usuario) || { intentos: 0, bloqueadoHasta: null };
-
-    const nuevosIntentos = userAttempts.intentos + 1;
+    const nuevosIntentos = globalLoginAttempts.intentos + 1;
     let bloqueadoHasta = null;
 
-    // If reaches max attempts, block for configured duration
+    // If reaches max attempts, block globally for configured duration
     if (nuevosIntentos >= config.loginAttempts.maxAttempts) {
         bloqueadoHasta = new Date(Date.now() + config.loginAttempts.lockoutDuration);
+        console.log(`🔒 BLOQUEO GLOBAL activado por ${config.loginAttempts.lockoutDuration / 1000} segundos`);
     }
 
-    // Update in-memory storage
-    loginAttempts.set(usuario, {
+    // Update global counter
+    globalLoginAttempts = {
         intentos: nuevosIntentos,
         bloqueadoHasta: bloqueadoHasta
-    });
+    };
 
-    console.log(`🔒 Usuario "${usuario}": ${nuevosIntentos} intentos fallidos`);
+    console.log(`🔒 Intento fallido con usuario "${usuario}": ${nuevosIntentos}/${config.loginAttempts.maxAttempts} intentos globales`);
 
     return nuevosIntentos;
 }
@@ -90,8 +87,8 @@ async function incrementarIntentos(usuario) {
  * @param {string} usuario - Username
  */
 async function resetearIntentos(usuario) {
-    loginAttempts.delete(usuario);
-    console.log(`✅ Intentos reseteados para usuario: ${usuario}`);
+    globalLoginAttempts = { intentos: 0, bloqueadoHasta: null };
+    console.log(`✅ Intentos globales reseteados tras login exitoso de: ${usuario}`);
 }
 
 /**
