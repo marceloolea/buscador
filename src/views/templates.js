@@ -125,6 +125,67 @@ function dashboardTemplate(usuario = 'Usuario') {
                 .table-container::-webkit-scrollbar-thumb:hover {
                     background: #0056b3;
                 }
+
+                /* Modal styles */
+                .modal {
+                    display: none;
+                    position: fixed;
+                    z-index: 1000;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0,0,0,0.5);
+                    animation: fadeIn 0.3s;
+                }
+
+                .modal-content {
+                    background-color: #fefefe;
+                    margin: 5% auto;
+                    padding: 20px;
+                    border: none;
+                    border-radius: 10px;
+                    width: 90%;
+                    max-width: 800px;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    animation: slideIn 0.3s;
+                }
+
+                .close {
+                    color: #aaa;
+                    float: right;
+                    font-size: 28px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    line-height: 1;
+                }
+
+                .close:hover,
+                .close:focus {
+                    color: #000;
+                    text-decoration: none;
+                }
+
+                .clickable-row {
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                }
+
+                .clickable-row:hover {
+                    background-color: #e3f2fd !important;
+                }
+
+                @keyframes fadeIn {
+                    from {opacity: 0;}
+                    to {opacity: 1;}
+                }
+
+                @keyframes slideIn {
+                    from {transform: translateY(-50px); opacity: 0;}
+                    to {transform: translateY(0); opacity: 1;}
+                }
             </style>
         </head>
         <body>
@@ -196,6 +257,16 @@ function dashboardTemplate(usuario = 'Usuario') {
 
             </div>
 
+            <!-- Modal para mostrar detalles de registro -->
+            <div id="recordModal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <div id="modalContent">
+                        <!-- Contenido del modal se genera dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
             <script>
                 ${getDashboardScript()}
             </script>
@@ -210,6 +281,58 @@ function dashboardTemplate(usuario = 'Usuario') {
  */
 function getDashboardScript() {
     return `
+                // Función para generar tabla transpuesta
+                function generateTransposedTable(registro, title = 'Detalles del Registro') {
+                    let html = '<h3>' + title + '</h3>';
+                    html += '<div class="table-container">';
+                    html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
+
+                    Object.keys(registro).forEach(key => {
+                        const valor = registro[key] || '';
+                        html += '<tr style="border-bottom: 1px solid #ddd;">';
+                        html += '<td style="padding: 8px; font-weight: bold; background: #f8f9fa; width: 200px;">' + key.toUpperCase() + '</td>';
+                        html += '<td style="padding: 8px;">' + valor + '</td>';
+                        html += '</tr>';
+                    });
+
+                    html += '</table></div>';
+                    return html;
+                }
+
+                // Función para mostrar modal con registro
+                function showRecordModal(registro) {
+                    const modal = document.getElementById('recordModal');
+                    const modalContent = document.getElementById('modalContent');
+
+                    modalContent.innerHTML = generateTransposedTable(registro, '📋 Detalles del Registro');
+                    modal.style.display = 'block';
+                }
+
+                // Event listeners para el modal
+                document.addEventListener('DOMContentLoaded', function() {
+                    const modal = document.getElementById('recordModal');
+                    const closeBtn = document.querySelector('.close');
+
+                    // Cerrar modal al hacer clic en X
+                    closeBtn.onclick = function() {
+                        modal.style.display = 'none';
+                    }
+
+                    // Cerrar modal al hacer clic fuera de él
+                    window.onclick = function(event) {
+                        if (event.target == modal) {
+                            modal.style.display = 'none';
+                        }
+                    }
+
+                    // Cerrar modal con tecla Escape
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && modal.style.display === 'block') {
+                            modal.style.display = 'none';
+                        }
+                    });
+                });
+
                 // Mostrar/ocultar selector de comuna según el campo seleccionado
                 document.getElementById('searchField').addEventListener('change', function() {
                     const campo = this.value;
@@ -278,23 +401,11 @@ function getDashboardScript() {
                         // If exactly 1 result, show transposed
                         if (data.resultados.length === 1) {
                             const registro = data.resultados[0];
-                            let html = '<h3>✅ Resultado encontrado (1 registro)</h3>';
-                            html += '<div class="table-container">';
-                            html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
-
-                            Object.keys(registro).forEach(key => {
-                                const valor = registro[key] || '';
-                                html += '<tr style="border-bottom: 1px solid #ddd;">';
-                                html += '<td style="padding: 8px; font-weight: bold; background: #f8f9fa; width: 200px;">' + key.toUpperCase() + '</td>';
-                                html += '<td style="padding: 8px;">' + valor + '</td>';
-                                html += '</tr>';
-                            });
-
-                            html += '</table></div>';
-                            resultsDiv.innerHTML = html;
+                            resultsDiv.innerHTML = generateTransposedTable(registro, '✅ Resultado encontrado (1 registro)');
                         } else {
-                            // Multiple results - normal table
+                            // Multiple results - normal table with clickable rows
                             let html = '<h3>✅ Resultados encontrados (' + data.resultados.length + ' registros)</h3>';
+                            html += '<p style="color: #666; font-style: italic; margin-bottom: 15px;">💡 Haz clic en cualquier fila para ver los detalles completos</p>';
                             html += '<div class="table-container">';
                             html += '<table style="width: 100%; border-collapse: collapse; background: white; min-width: 800px;">';
 
@@ -308,7 +419,8 @@ function getDashboardScript() {
                             // Rows
                             html += '<tbody>';
                             data.resultados.forEach((registro, index) => {
-                                html += '<tr style="' + (index % 2 === 0 ? 'background: #f8f9fa;' : '') + '">';
+                                const rowStyle = (index % 2 === 0 ? 'background: #f8f9fa;' : '') + ' cursor: pointer;';
+                                html += '<tr class="clickable-row" style="' + rowStyle + '" data-record-index="' + index + '">';
                                 Object.values(registro).forEach(valor => {
                                     html += '<td style="padding: 8px; border-bottom: 1px solid #ddd; white-space: nowrap;">' + (valor || '') + '</td>';
                                 });
@@ -317,6 +429,15 @@ function getDashboardScript() {
                             html += '</tbody></table></div>';
 
                             resultsDiv.innerHTML = html;
+
+                            // Add click event listeners to rows
+                            document.querySelectorAll('.clickable-row').forEach(row => {
+                                row.addEventListener('click', function() {
+                                    const recordIndex = parseInt(this.getAttribute('data-record-index'));
+                                    const registro = data.resultados[recordIndex];
+                                    showRecordModal(registro);
+                                });
+                            });
                         }
 
                     } catch (error) {
