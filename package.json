@@ -28,5 +28,8 @@
     "fecha"
   ],
   "author": "Marcelo Olea",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "supabase": "^2.48.3"
+  }
 }
