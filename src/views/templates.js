@@ -36,10 +36,6 @@ function loginTemplate(error = '') {
         <body>
             <div class="container">
                 <h2>🔐 Acceso al Sistema</h2>
-                <div class="info">
-                    <strong>Usuarios de prueba:</strong><br>
-                    ${config.testUsers.map(user => `${user.username} / ${user.password}`).join('<br>')}
-                </div>
                 <form method="POST" action="/login">
                     <div class="form-group">
                         <label for="usuario">Usuario:</label>
