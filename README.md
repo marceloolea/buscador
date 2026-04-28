@@ -19,6 +19,14 @@ Aplicación web para búsqueda de datos en base de datos de servicios públicos.
 - **Autenticación**: Express Session
 - **Hosting**: Railway
 
+## 📸 Capturas de Pantalla
+
+![Login](screenshots/login1.png)
+![Dashboard](screenshots/buscador1.png)
+![Resultados de búsqueda](screenshots/buscador2.png)
+![Detalle del registro](screenshots/buscador3.png)
+
+
 ## 👥 Usuarios de Prueba
 
 - **admin** / admin123
