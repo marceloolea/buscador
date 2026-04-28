@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Área Protegida</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css"> 
+
+</head>
+<body>
+    <div class="container">
+        
+        <h2>Bienvenido, <%= username %>!</h2>
+        <p>Esta es una página protegida.</p>
+        
+         <p><a href="/">Ir al Buscador</a></p>
+        
+        <p class="logout-link"><a href="/auth/logout">Cerrar Sesión</a></p> <%-- Ruta de logout en el router de auth --%>
+    </div>
+</body>
+</html>

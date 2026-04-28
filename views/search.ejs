@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Buscar en la Tabla</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+    <script>
+        function clearFormAndResults() {
+            document.getElementById("searchForm").reset();
+            const resultsArea = document.getElementById("resultsArea");
+            if (resultsArea) {
+                resultsArea.classList.remove("visible");
+            }
+             // Si quieres que "Limpiar" recargue la página para resetearla completamente:
+             window.location.href = '/';
+        }
+         // Puedes añadir JS aquí para mostrar el área de resultados si hay contenido al cargar
+          window.onload = function() {
+              const resultsArea = document.getElementById("resultsArea");
+               // Verifica si el área de resultados ya tiene contenido renderizado por el servidor
+               if (resultsArea && resultsArea.innerHTML.trim() !== '') {
+                  resultsArea.classList.add("visible");
+               }
+          };
+    </script>
+</head>
+<body>
+    <h1>Buscar en la Tabla</h1>
+
+    <form action="/buscar" method="post" id="searchForm">
+        <label for="columna">Seleccionar Columna:</label>
+        <select name="columna" id="columna" required>
+             <option value="">-- Seleccione una columna --</option>
+             <% columnNames.forEach(col => { %>
+                  <option value="<%= col %>" <%= typeof selectedColumn !== 'undefined' && selectedColumn === col ? 'selected' : '' %>><%= col %></option>
+             <% }); %>
+        </select>
+        <br><br>
+        <label for="termino">Término de Búsqueda:</label>
+        <input type="text" name="termino" id="termino" value="<%= typeof searchTermValue !== 'undefined' ? searchTermValue : '' %>" required>
+        <br><br>
+        <button type="submit">Buscar</button>
+        <button type="button" onclick="clearFormAndResults()">Limpiar</button>
+    </form>
+
+    <hr>
+
+    <% if (resultsHtml && resultsHtml.length > 0 && resultsHtml.trim() !== '<p>Utiliza el formulario de arriba para buscar información en la tabla.</p>') { %>
+         <div id="resultsArea" class="results-area visible">
+             <%- resultsHtml %>
+         </div>
+    <% } else { %>
+         <div id="resultsArea" class="results-area">
+              <% if (resultsHtml && resultsHtml.trim() === '<p>Utiliza el formulario de arriba para buscar información en la tabla.</p>') { %>
+                    <p>Utiliza el formulario de arriba para buscar información en la tabla.</p>
+              <% } %>
+         </div>
+    <% } %>
+
+     <p class="logout-link"><a href="/auth/logout">Cerrar Sesión</a></p> 
+
+
+</body>
+</html>
